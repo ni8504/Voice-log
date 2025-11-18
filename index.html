@@ -25,6 +25,19 @@
       max-width: 240px;
       margin-bottom: 20px;
     }
+    #successToast {
+      position: fixed;
+      left: 50%;
+      bottom: 30px;
+      transform: translateX(-50%);
+      background: #28a745;
+      color: white;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 16px;
+      display: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
   </style>
 </head>
 <body>
@@ -46,8 +59,11 @@
 
   <audio id="preview" controls style="display:none;"></audio>
 
+  <!-- Success toast -->
+  <div id="successToast">✓ Recording sent successfully</div>
+
   <script>
-    // Your Zapier webhook URL
+    // Zapier webhook URL
     const ZAPIER_HOOK_URL = "https://hooks.zapier.com/hooks/catch/1249732/uzoc2m7/";
 
     // Read URL params
@@ -57,12 +73,14 @@
     const clientName = params.get("client_name");
 
     const sessionInfo = document.getElementById("sessionInfo");
-    sessionInfo.textContent = `Event: ${eventId || "unknown"} | Specialist: ${trainerId || "unknown"}${clientName ? " | Client: " + clientName : ""}`;
+    sessionInfo.textContent = 
+      `Event: ${eventId || "unknown"} | Specialist: ${trainerId || "unknown"}${clientName ? " | Client: " + clientName : ""}`;
 
     const recordBtn = document.getElementById("recordBtn");
     const sendBtn = document.getElementById("sendBtn");
     const statusEl = document.getElementById("status");
     const preview = document.getElementById("preview");
+    const successToast = document.getElementById("successToast");
 
     let mediaRecorder;
     let chunks = [];
@@ -133,9 +151,19 @@
         });
 
         if (res.ok) {
-          statusEl.textContent = "Recording sent. You can close this page.";
+          // Show toast
+          successToast.style.display = "block";
+          statusEl.textContent = "";
+
           sendBtn.disabled = true;
           recordBtn.disabled = true;
+
+          // Auto-close (with fallback) after a short delay
+          setTimeout(() => {
+            window.close();
+            window.location.href = "about:blank";
+          }, 1200);
+
         } else {
           statusEl.textContent = "Upload failed. Try again or use the form.";
         }

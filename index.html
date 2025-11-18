@@ -1,196 +1,403 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-UTF-8">
-  <title>Session Logoff – Audio</title>
+  <meta charset="utf-8">
+  <title>Session Logoff – Audio (WAV)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      text-align: center;
-    }
-    #recordBtn, #sendBtn {
-      padding: 15px 25px;
-      margin: 10px;
-      font-size: 18px;
-    }
-    #status {
-      margin-top: 15px;
-      font-weight: bold;
-    }
-    #preview {
-      margin-top: 20px;
-    }
-    img.logo {
-      max-width: 240px;
-      margin-bottom: 20px;
-    }
-    #successToast {
-      position: fixed;
-      left: 50%;
-      bottom: 30px;
-      transform: translateX(-50%);
-      background: #28a745;
-      color: white;
-      padding: 10px 18px;
-      border-radius: 6px;
-      font-size: 16px;
-      display: none;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-    }
-    #doneMessage {
-      margin-top: 25px;
-      font-size: 18px;
-      font-weight: 600;
-      display: none;
-    }
+    body { font-family: Arial, sans-serif; margin: 18px; text-align: center; color:#222; }
+    .logo { max-width:200px; margin-bottom:12px; }
+    h2 { margin:6px 0 10px; font-size:20px; }
+    #sessionInfo { margin-bottom:12px; color:#333; font-weight:600; }
+    #controls { margin-top:8px; }
+    button { padding:12px 18px; margin:6px; font-size:16px; border-radius:6px; border:1px solid #ccc; background:#f5f5f5; cursor:pointer; }
+    button.primary { background:#0077cc; color:white; border-color:#0066aa; }
+    button:disabled { opacity:0.5; cursor:not-allowed; }
+    #status { margin-top:12px; font-weight:600; min-height:20px; color:#333; }
+    #preview { margin-top:14px; width:90%; max-width:540px; }
+    #guidance { margin:12px auto; text-align:left; max-width:720px; border-radius:8px; background:#fcfcfd; padding:12px 14px; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+    .hintTitle { font-weight:700; font-size:14px; margin-bottom:6px; }
+    .hint { font-size:13px; color:#444; line-height:1.4; }
+    .example { background:#fff; border-left:4px solid #00a651; padding:8px 10px; margin-top:8px; font-size:13px; color:#222; }
+    .badExample { background:#fff; border-left:4px solid #d9534f; padding:8px 10px; margin-top:8px; font-size:13px; color:#222; }
+    .checklist { text-align:left; display:inline-block; max-width:720px; margin-top:10px; }
+    .checklist label { display:flex; align-items:center; gap:10px; padding:6px 0; font-size:14px; }
+    .checkOptional { color:#666; font-size:12px; margin-left:28px; }
+    #successToast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); background: #28a745; color: white; padding: 10px 18px; border-radius: 6px; font-size: 16px; display: none; box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+    #doneMessage { margin-top:18px; font-size:16px; display:none; color:#333; font-weight:600; }
+    #examplesModal { display:none; position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); width:92%; max-width:720px; background:white; border-radius:8px; padding:18px; box-shadow:0 8px 30px rgba(0,0,0,0.25); z-index:9999; text-align:left; }
+    .smalllink { color:#0077cc; cursor:pointer; font-size:13px; text-decoration:underline; margin-left:6px; }
+    @media (max-width:640px){ .checklist{ width:100%; padding:0 12px } .logo{max-width:170px} }
   </style>
 </head>
 <body>
 
-  <!-- Logo -->
-  <img 
-    class="logo" 
-    src="https://inmotionwellnessstudio.com/wp-content/uploads/2025/05/logo__full_color-1-png.webp" 
-    alt="InMotion Wellness Studio Logo"
-  />
+  <img class="logo" src="https://inmotionwellnessstudio.com/wp-content/uploads/2025/05/logo__full_color-1-png.webp" alt="InMotion Logo" />
+  <h2>Session Logoff – Audio (WAV)</h2>
+  <p id="sessionInfo">Event: unknown | Specialist: unknown</p>
 
-  <h2>Session Logoff – Audio</h2>
-  <p id="sessionInfo"></p>
+  <div id="guidance" role="region" aria-label="Recording guidance">
+    <div class="hintTitle">Quick script — say this at the start</div>
+    <div class="hint">
+      “Today we did: <strong>[list stretches]</strong>. Intensity: <strong>[1/3/5]</strong>. Reps: <strong>[e.g., 3-3-5]</strong>. Hold: <strong>[e.g., 5 sec]</strong>. Client said: <strong>[quote]</strong>. Objective: <strong>[tightness / ROM change / pain]</strong>. Plan: <strong>[next step]</strong>.”
+      <span class="smalllink" onclick="showExamples()">See examples</span>
+    </div>
 
-  <button id="recordBtn">Start recording</button>
-  <button id="sendBtn" disabled>Send recording</button>
+    <div style="margin-top:8px;">
+      <strong>Checklist (tap while reviewing; optional but recommended)</strong>
+      <div class="checklist" id="manualChecklist">
+        <label><input type="checkbox" id="chk_stretches" /> Listed stretches performed</label>
+        <label><input type="checkbox" id="chk_intensity" /> Reported intensity (1/3/5), reps and hold time</label>
+        <label><input type="checkbox" id="chk_subjective" /> Included what the client said about how they felt</label>
+        <label><input type="checkbox" id="chk_objective" /> Objective findings (tightness, ROM change, pain)</label>
+        <label><input type="checkbox" id="chk_plan" /> Short plan / next step</label>
+        <div class="checkOptional">Optional: Theragun settings, duration, or rep pattern details.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="controls">
+    <button id="recordBtn">Start recording</button>
+    <button id="sendBtn" class="primary" disabled>Send recording</button>
+  </div>
 
   <p id="status"></p>
 
   <audio id="preview" controls style="display:none;"></audio>
 
-  <!-- Success toast -->
-  <div id="successToast">✓ Recording sent successfully</div>
   <div id="doneMessage">All set. You can return to the previous screen.</div>
+  <div id="successToast">✓ Recording sent successfully</div>
+
+  <div id="examplesModal">
+    <h3 style="margin-top:0">Good vs Bad — quick examples</h3>
+    <div><strong>Good</strong>
+      <div class="example">
+        “Today we did Bent-knee hamstring, Deep 6, and Piriformis. Intensities: 3, 3, 5. Reps: 3-3-5. Hold: 5 sec. Client said her right hamstring felt 'tight and pulling' after the walk. Objective: decreased right lumbar rotation; improved hamstring ROM after the walk. Plan: next session focus on hip-flexor release and Theragun anterior.”
+      </div>
+    </div>
+
+    <div style="margin-top:10px"><strong>Bad</strong>
+      <div class="badExample">“Larry was really good today. His hamstrings were really tight and his right lower back was really tight.”</div>
+    </div>
+
+    <div style="margin-top:12px">
+      <button onclick="closeExamples()">Close</button>
+    </div>
+  </div>
 
   <script>
-    // Zapier webhook URL
+    // CONFIG
     const ZAPIER_HOOK_URL = "https://hooks.zapier.com/hooks/catch/1249732/uzoc2m7/";
-
-    // Detect iframe
-    const inIframe = window.self !== window.top;
-
-    // Read URL params
     const params = new URLSearchParams(window.location.search);
     const eventId = params.get("event_id");
     const trainerId = params.get("trainer_id");
     const trainerName = params.get("trainer_name");
     const clientName = params.get("client_name");
+    const inIframe = window.self !== window.top;
 
-    const sessionInfo = document.getElementById("sessionInfo");
-    sessionInfo.textContent =
+    document.getElementById('sessionInfo').textContent =
       `Event: ${eventId || "unknown"} | Specialist: ${trainerName || trainerId || "unknown"}${clientName ? " | Client: " + clientName : ""}`;
 
-    const recordBtn = document.getElementById("recordBtn");
-    const sendBtn = document.getElementById("sendBtn");
-    const statusEl = document.getElementById("status");
-    const preview = document.getElementById("preview");
-    const successToast = document.getElementById("successToast");
-    const doneMessage = document.getElementById("doneMessage");
+    // Checklist util
+    const checklistIds = ["chk_stretches","chk_intensity","chk_subjective","chk_objective","chk_plan"];
+    function collectChecklist() {
+      const obj = {};
+      checklistIds.forEach(id=>{
+        const el = document.getElementById(id);
+        obj[id] = !!(el && el.checked);
+      });
+      return obj;
+    }
 
-    let mediaRecorder;
-    let chunks = [];
-    let audioBlob = null;
+    function showExamples(){ document.getElementById('examplesModal').style.display='block'; }
+    function closeExamples(){ document.getElementById('examplesModal').style.display='none'; }
+
+    // AUDIO RECORDING -> WAV (WebAudio)
+    let audioContext = null;
+    let sourceNode = null;
+    let processorNode = null;
+    let audioStream = null;
+
+    // Buffering
+    let recording = false;
+    let leftChannel = [];
+    let recordingLength = 0;
+    let sampleRate = 16000; // target sample rate for WAV (downsample)
+    const INPUT_BUFFER_SIZE = 4096;
+
+    // UI refs
+    const recordBtn = document.getElementById('recordBtn');
+    const sendBtn = document.getElementById('sendBtn');
+    const statusEl = document.getElementById('status');
+    const preview = document.getElementById('preview');
+    const successToast = document.getElementById('successToast');
+    const doneMessage = document.getElementById('doneMessage');
+
+    // limits
+    const MAX_SECONDS = 300; // 5 minutes
+    const MAX_MB = 20; // block >20MB uploads
+
+    let maxTimer = null;
 
     async function startRecording() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-        chunks = [];
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          statusEl.textContent = "Microphone not supported in this browser.";
+          return;
+        }
 
-        mediaRecorder.ondataavailable = e => chunks.push(e.data);
+        audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // we will resample to 16k later; keep original context sample rate for capture
+        const inputSampleRate = audioContext.sampleRate;
 
-        mediaRecorder.onstop = () => {
-          audioBlob = new Blob(chunks, { type: "audio/webm" });
-          preview.src = URL.createObjectURL(audioBlob);
-          preview.style.display = "block";
-          sendBtn.disabled = false;
-          statusEl.textContent = "Recording complete. Review and send.";
+        sourceNode = audioContext.createMediaStreamSource(audioStream);
+
+        // ScriptProcessorNode is deprecated but widely supported; AudioWorklet is ideal but more setup.
+        processorNode = audioContext.createScriptProcessor(INPUT_BUFFER_SIZE, 1, 1);
+
+        processorNode.onaudioprocess = function(e) {
+          if (!recording) return;
+          const inputData = e.inputBuffer.getChannelData(0);
+          // copy the Float32Array
+          leftChannel.push(new Float32Array(inputData));
+          recordingLength += inputData.length;
         };
 
-        mediaRecorder.start();
+        sourceNode.connect(processorNode);
+        processorNode.connect(audioContext.destination); // required in some browsers
+
+        recording = true;
+        leftChannel = [];
+        recordingLength = 0;
+
+        recordBtn.textContent = "Stop recording";
+        sendBtn.disabled = true;
         statusEl.textContent = "Recording... tap again to stop.";
 
+        // auto-stop timer
+        maxTimer = setTimeout(() => {
+          if (recording) {
+            stopRecording();
+            statusEl.textContent = 'Max recording length reached — auto-stopped.';
+          }
+        }, MAX_SECONDS * 1000);
+
       } catch (err) {
-        statusEl.textContent = "Microphone permission denied or unavailable.";
         console.error(err);
+        statusEl.textContent = "Microphone permission denied or unavailable.";
       }
     }
 
     function stopRecording() {
-      if (mediaRecorder && mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
-        statusEl.textContent = "Processing recording...";
+      if (!recording) return;
+      recording = false;
+
+      if (maxTimer) { clearTimeout(maxTimer); maxTimer = null; }
+
+      // disconnect
+      try {
+        if (processorNode) {
+          processorNode.disconnect();
+          processorNode.onaudioprocess = null;
+        }
+        if (sourceNode) sourceNode.disconnect();
+        if (audioStream) {
+          audioStream.getTracks().forEach(t => t.stop());
+        }
+        if (audioContext && typeof audioContext.close === 'function') {
+          audioContext.close();
+        }
+      } catch (e) { console.warn(e); }
+
+      recordBtn.textContent = "Start recording";
+      statusEl.textContent = "Processing recording...";
+
+      // Merge buffers
+      const mergedBuffers = mergeBuffers(leftChannel, recordingLength);
+      // Downsample and get WAV blob
+      const wavBuffer = encodeWAV(mergedBuffers, audioContext ? audioContext.sampleRate : 48000, sampleRate);
+      const audioBlob = new Blob([wavBuffer], { type: "audio/wav" });
+
+      // Preview and enable send or block by size
+      preview.src = URL.createObjectURL(audioBlob);
+      preview.style.display = 'block';
+
+      // store on element for send
+      preview._audioBlob = audioBlob;
+
+      const sizeMb = audioBlob.size / (1024 * 1024);
+      statusEl.textContent = `Recording ${ (sizeMb).toFixed(2) } MB — ${ Math.round((recordingLength / (audioContext ? audioContext.sampleRate : 48000))) } sec approx`;
+      if (sizeMb > MAX_MB) {
+        statusEl.textContent += ' — TOO LARGE. Please record a shorter clip.';
+        sendBtn.disabled = true;
+      } else {
+        sendBtn.disabled = false;
       }
     }
 
-    recordBtn.addEventListener("click", () => {
-      if (!mediaRecorder || mediaRecorder.state === "inactive") {
+    // Merge Float32 arrays
+    function mergeBuffers(channelBuffer, recordingLength) {
+      const result = new Float32Array(recordingLength);
+      let offset = 0;
+      for (let i = 0; i < channelBuffer.length; i++) {
+        result.set(channelBuffer[i], offset);
+        offset += channelBuffer[i].length;
+      }
+      return result;
+    }
+
+    // downsample from inputSampleRate to outputSampleRate and convert to 16-bit PCM WAV
+    function encodeWAV(samples, inputSampleRate, outputSampleRate) {
+      // If audioContext was closed, inputSampleRate might be undefined - infer from samples length and MAX_SECONDS roughness.
+      if (!inputSampleRate) inputSampleRate = outputSampleRate;
+
+      // downsample
+      const data = downsampleBuffer(samples, inputSampleRate, outputSampleRate);
+      const buffer = new ArrayBuffer(44 + data.length * 2);
+      const view = new DataView(buffer);
+
+      /* RIFF identifier */
+      writeString(view, 0, 'RIFF');
+      /* file length */
+      view.setUint32(4, 36 + data.length * 2, true);
+      /* RIFF type */
+      writeString(view, 8, 'WAVE');
+      /* format chunk identifier */
+      writeString(view, 12, 'fmt ');
+      /* format chunk length */
+      view.setUint32(16, 16, true);
+      /* sample format (raw) */
+      view.setUint16(20, 1, true);
+      /* channel count */
+      view.setUint16(22, 1, true);
+      /* sample rate */
+      view.setUint32(24, outputSampleRate, true);
+      /* byte rate (sample rate * block align) */
+      view.setUint32(28, outputSampleRate * 2, true);
+      /* block align (channel count * bytes per sample) */
+      view.setUint16(32, 2, true);
+      /* bits per sample */
+      view.setUint16(34, 16, true);
+      /* data chunk identifier */
+      writeString(view, 36, 'data');
+      /* data chunk length */
+      view.setUint32(40, data.length * 2, true);
+
+      // write the PCM samples
+      floatTo16BitPCM(view, 44, data);
+
+      return view;
+    }
+
+    function downsampleBuffer(buffer, inputSampleRate, outputSampleRate) {
+      if (outputSampleRate === inputSampleRate) {
+        return buffer;
+      }
+      const sampleRateRatio = inputSampleRate / outputSampleRate;
+      const newLength = Math.round(buffer.length / sampleRateRatio);
+      const result = new Float32Array(newLength);
+      let offsetResult = 0;
+      let offsetBuffer = 0;
+      while (offsetResult < result.length) {
+        const nextOffsetBuffer = Math.round((offsetResult + 1) * sampleRateRatio);
+        // average between the two
+        let accum = 0, count = 0;
+        for (let i = offsetBuffer; i < nextOffsetBuffer && i < buffer.length; i++) {
+          accum += buffer[i];
+          count++;
+        }
+        result[offsetResult] = count ? accum / count : 0;
+        offsetResult++;
+        offsetBuffer = nextOffsetBuffer;
+      }
+      return result;
+    }
+
+    function floatTo16BitPCM(output, offset, input) {
+      for (let i = 0; i < input.length; i++, offset += 2) {
+        let s = Math.max(-1, Math.min(1, input[i]));
+        s = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        output.setInt16(offset, s, true);
+      }
+    }
+
+    function writeString(view, offset, string) {
+      for (let i = 0; i < string.length; i++){
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    }
+
+    // BUTTON LOGIC
+    recordBtn.addEventListener('click', async () => {
+      if (!recording) {
         startRecording();
-        recordBtn.textContent = "Stop recording";
-        sendBtn.disabled = true;
-      } else if (mediaRecorder.state === "recording") {
+      } else {
         stopRecording();
-        recordBtn.textContent = "Start recording";
       }
     });
 
-    sendBtn.addEventListener("click", async () => {
-      if (!audioBlob) {
-        statusEl.textContent = "No recording to send.";
+    sendBtn.addEventListener('click', async () => {
+      const audioBlob = preview._audioBlob;
+      if (!audioBlob) { statusEl.textContent = "No recording to send."; return; }
+
+      // sanity size check
+      const sizeMb = audioBlob.size / (1024 * 1024);
+      if (sizeMb > MAX_MB) {
+        statusEl.textContent = `Recording ${sizeMb.toFixed(2)} MB — too large. Shorten and try again.`;
         return;
       }
 
       statusEl.textContent = "Uploading recording...";
+      sendBtn.disabled = true;
+      recordBtn.disabled = true;
 
+      // build filename
+      const filename = `session_${Date.now()}.wav`;
       const formData = new FormData();
-      formData.append("audio", audioBlob, "session_note.webm");
+      formData.append("audio", audioBlob, filename);
       formData.append("event_id", eventId || "");
       formData.append("trainer_id", trainerId || "");
       formData.append("trainer_name", trainerName || "");
       formData.append("client_name", clientName || "");
+      formData.append("checklist", JSON.stringify(collectChecklist()));
       formData.append("submitted_at", new Date().toISOString());
 
       try {
-        const res = await fetch(ZAPIER_HOOK_URL, {
-          method: "POST",
-          body: formData
-        });
-
+        const res = await fetch(ZAPIER_HOOK_URL, { method: "POST", body: formData });
         if (res.ok) {
-          // Show toast
           successToast.style.display = "block";
           statusEl.textContent = "";
-          sendBtn.disabled = true;
-          recordBtn.disabled = true;
-
-          // Hide controls and show clear "done" message
           preview.style.display = "none";
           doneMessage.style.display = "block";
-
-          // After a pause, try closing or going back (if not iframe)
-          setTimeout(() => {
+          setTimeout(()=> {
             if (!inIframe) {
-              try { window.close(); } catch (e) {}
+              try { window.close(); } catch(e) {}
               history.back();
             }
           }, 1200);
-
         } else {
+          const text = await res.text();
+          console.warn("Upload failed", res.status, text);
           statusEl.textContent = "Upload failed. Try again or use the form.";
+          sendBtn.disabled = false;
+          recordBtn.disabled = false;
         }
-
       } catch (err) {
         console.error(err);
         statusEl.textContent = "Network error while uploading.";
+        sendBtn.disabled = false;
+        recordBtn.disabled = false;
       }
     });
+
+    // small helper note if trainerName present but trainerId not provided
+    if ((trainerName || clientName) && !trainerId) {
+      const p = document.createElement('div');
+      p.style.fontSize = '12px'; p.style.color='#666'; p.style.marginTop='10px';
+      p.innerHTML = 'Note: trainer/client names are collected automatically. For reliable event mapping ensure your backend supplies trainer_id in the link.';
+      document.getElementById('guidance').appendChild(p);
+    }
   </script>
 
 </body>

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-UTF-8">
   <title>Session Logoff – Audio</title>
   <style>
     body {
@@ -38,6 +38,12 @@
       display: none;
       box-shadow: 0 2px 6px rgba(0,0,0,0.25);
     }
+    #doneMessage {
+      margin-top: 25px;
+      font-size: 18px;
+      font-weight: 600;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -61,26 +67,32 @@
 
   <!-- Success toast -->
   <div id="successToast">✓ Recording sent successfully</div>
+  <div id="doneMessage">All set. You can return to the previous screen.</div>
 
   <script>
     // Zapier webhook URL
     const ZAPIER_HOOK_URL = "https://hooks.zapier.com/hooks/catch/1249732/uzoc2m7/";
 
+    // Detect iframe
+    const inIframe = window.self !== window.top;
+
     // Read URL params
     const params = new URLSearchParams(window.location.search);
     const eventId = params.get("event_id");
     const trainerId = params.get("trainer_id");
+    const trainerName = params.get("trainer_name");
     const clientName = params.get("client_name");
 
     const sessionInfo = document.getElementById("sessionInfo");
-    sessionInfo.textContent = 
-      `Event: ${eventId || "unknown"} | Specialist: ${trainerId || "unknown"}${clientName ? " | Client: " + clientName : ""}`;
+    sessionInfo.textContent =
+      `Event: ${eventId || "unknown"} | Specialist: ${trainerName || trainerId || "unknown"}${clientName ? " | Client: " + clientName : ""}`;
 
     const recordBtn = document.getElementById("recordBtn");
     const sendBtn = document.getElementById("sendBtn");
     const statusEl = document.getElementById("status");
     const preview = document.getElementById("preview");
     const successToast = document.getElementById("successToast");
+    const doneMessage = document.getElementById("doneMessage");
 
     let mediaRecorder;
     let chunks = [];
@@ -141,6 +153,7 @@
       formData.append("audio", audioBlob, "session_note.webm");
       formData.append("event_id", eventId || "");
       formData.append("trainer_id", trainerId || "");
+      formData.append("trainer_name", trainerName || "");
       formData.append("client_name", clientName || "");
       formData.append("submitted_at", new Date().toISOString());
 
@@ -154,14 +167,19 @@
           // Show toast
           successToast.style.display = "block";
           statusEl.textContent = "";
-
           sendBtn.disabled = true;
           recordBtn.disabled = true;
 
-          // Auto-close (with fallback) after a short delay
+          // Hide controls and show clear "done" message
+          preview.style.display = "none";
+          doneMessage.style.display = "block";
+
+          // After a pause, try closing or going back (if not iframe)
           setTimeout(() => {
-            window.close();
-            window.location.href = "about:blank";
+            if (!inIframe) {
+              try { window.close(); } catch (e) {}
+              history.back();
+            }
           }, 1200);
 
         } else {

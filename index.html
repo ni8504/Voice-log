@@ -2,9 +2,40 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Session Logoff (Audio)</title>
+  <title>Session Logoff – Audio</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      text-align: center;
+    }
+    #recordBtn, #sendBtn {
+      padding: 15px 25px;
+      margin: 10px;
+      font-size: 18px;
+    }
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    #preview {
+      margin-top: 20px;
+    }
+    img.logo {
+      max-width: 240px;
+      margin-bottom: 20px;
+    }
+  </style>
 </head>
 <body>
+
+  <!-- Logo -->
+  <img 
+    class="logo" 
+    src="https://inmotionwellnessstudio.com/wp-content/uploads/2025/05/logo__full_color-1-png.webp" 
+    alt="InMotion Wellness Studio Logo"
+  />
+
   <h2>Session Logoff – Audio</h2>
   <p id="sessionInfo"></p>
 
@@ -12,24 +43,26 @@
   <button id="sendBtn" disabled>Send recording</button>
 
   <p id="status"></p>
+
   <audio id="preview" controls style="display:none;"></audio>
 
   <script>
-    const ZAPIER_HOOK_URL = 'https://hooks.zapier.com/hooks/catch/1249732/uzoc2m7/';
+    // Your Zapier webhook URL
+    const ZAPIER_HOOK_URL = "https://hooks.zapier.com/hooks/catch/1249732/uzoc2m7/";
 
-    // Read URL params (event_id, trainer_id, etc.)
+    // Read URL params
     const params = new URLSearchParams(window.location.search);
-    const eventId = params.get('event_id');
-    const trainerId = params.get('trainer_id');
-    const clientName = params.get('client_name'); // optional
+    const eventId = params.get("event_id");
+    const trainerId = params.get("trainer_id");
+    const clientName = params.get("client_name");
 
-    const sessionInfo = document.getElementById('sessionInfo');
-    sessionInfo.textContent = `Event: ${eventId || 'unknown'} | Specialist: ${trainerId || 'unknown'}${clientName ? ' | Client: ' + clientName : ''}`;
+    const sessionInfo = document.getElementById("sessionInfo");
+    sessionInfo.textContent = `Event: ${eventId || "unknown"} | Specialist: ${trainerId || "unknown"}${clientName ? " | Client: " + clientName : ""}`;
 
-    const recordBtn = document.getElementById('recordBtn');
-    const sendBtn = document.getElementById('sendBtn');
-    const statusEl = document.getElementById('status');
-    const preview = document.getElementById('preview');
+    const recordBtn = document.getElementById("recordBtn");
+    const sendBtn = document.getElementById("sendBtn");
+    const statusEl = document.getElementById("status");
+    const preview = document.getElementById("preview");
 
     let mediaRecorder;
     let chunks = [];
@@ -40,71 +73,79 @@
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream);
         chunks = [];
+
         mediaRecorder.ondataavailable = e => chunks.push(e.data);
+
         mediaRecorder.onstop = () => {
-          audioBlob = new Blob(chunks, { type: 'audio/webm' });
+          audioBlob = new Blob(chunks, { type: "audio/webm" });
           preview.src = URL.createObjectURL(audioBlob);
-          preview.style.display = 'block';
+          preview.style.display = "block";
           sendBtn.disabled = false;
-          statusEl.textContent = 'Recording complete. Review and send.';
+          statusEl.textContent = "Recording complete. Review and send.";
         };
+
         mediaRecorder.start();
-        statusEl.textContent = 'Recording... tap again to stop.';
+        statusEl.textContent = "Recording... tap again to stop.";
+
       } catch (err) {
-        statusEl.textContent = 'Microphone permission denied or unavailable.';
+        statusEl.textContent = "Microphone permission denied or unavailable.";
         console.error(err);
       }
     }
 
     function stopRecording() {
-      if (mediaRecorder && mediaRecorder.state === 'recording') {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
         mediaRecorder.stop();
-        statusEl.textContent = 'Processing recording...';
+        statusEl.textContent = "Processing recording...";
       }
     }
 
-    recordBtn.addEventListener('click', () => {
-      if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+    recordBtn.addEventListener("click", () => {
+      if (!mediaRecorder || mediaRecorder.state === "inactive") {
         startRecording();
-        recordBtn.textContent = 'Stop recording';
+        recordBtn.textContent = "Stop recording";
         sendBtn.disabled = true;
-      } else if (mediaRecorder.state === 'recording') {
+      } else if (mediaRecorder.state === "recording") {
         stopRecording();
-        recordBtn.textContent = 'Start recording';
+        recordBtn.textContent = "Start recording";
       }
     });
 
-    sendBtn.addEventListener('click', async () => {
+    sendBtn.addEventListener("click", async () => {
       if (!audioBlob) {
-        statusEl.textContent = 'No recording to send.';
+        statusEl.textContent = "No recording to send.";
         return;
       }
-      statusEl.textContent = 'Uploading recording...';
+
+      statusEl.textContent = "Uploading recording...";
 
       const formData = new FormData();
-      formData.append('audio', audioBlob, 'session_note.webm');
-      formData.append('event_id', eventId || '');
-      formData.append('trainer_id', trainerId || '');
-      formData.append('client_name', clientName || '');
-      formData.append('submitted_at', new Date().toISOString());
+      formData.append("audio", audioBlob, "session_note.webm");
+      formData.append("event_id", eventId || "");
+      formData.append("trainer_id", trainerId || "");
+      formData.append("client_name", clientName || "");
+      formData.append("submitted_at", new Date().toISOString());
 
       try {
         const res = await fetch(ZAPIER_HOOK_URL, {
-          method: 'POST',
+          method: "POST",
           body: formData
         });
+
         if (res.ok) {
-          statusEl.textContent = 'Recording sent. You can close this page.';
+          statusEl.textContent = "Recording sent. You can close this page.";
           sendBtn.disabled = true;
           recordBtn.disabled = true;
         } else {
-          statusEl.textContent = 'Upload failed. Please try again or use the form.';
+          statusEl.textContent = "Upload failed. Try again or use the form.";
         }
+
       } catch (err) {
         console.error(err);
-        statusEl.textContent = 'Network error while uploading.';
+        statusEl.textContent = "Network error while uploading.";
       }
     });
   </script>
+
 </body>
 </html>
